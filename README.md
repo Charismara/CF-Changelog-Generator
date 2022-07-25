@@ -5,7 +5,7 @@ Simple CurseForge changelog generator
 1. Place the old and new zip file into the same folder as the generator jar
 2. Run this command:
 ```sh
-java -jar .\CF-Changelog-Generator-1.0-SNAPSHOT-all.jar --token <CF-API-Token> --old <old-zip>.zip --new <new-zip>.zip
+java -jar .\CF-Changelog-Generator-1.0.0.jar --token <CF-API-Token> --old <old-zip>.zip --new <new-zip>.zip
 ```
 
 ## Getting an CurseForge API Token
