@@ -10,6 +10,7 @@ mainClassName='de.blutmondgilde.changeloggenerator.Main'
 
 repositories {
     mavenCentral()
+    maven { url = 'https://jcenter.bintray.com/'}
 }
 
 
@@ -18,6 +19,11 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.13.3'
+    // https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
+    implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
+
+    implementation 'io.github.furstenheim:copy_down:1.0'
+
 
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
