@@ -3,8 +3,11 @@ package de.blutmondgilde.changeloggenerator.utils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
+import de.blutmondgilde.changeloggenerator.Main;
 import de.blutmondgilde.changeloggenerator.model.CFMod;
 import de.blutmondgilde.changeloggenerator.model.CFModChangelog;
+import de.blutmondgilde.changeloggenerator.model.CFModFile;
+import de.blutmondgilde.changeloggenerator.model.CFModFileResponse;
 import de.blutmondgilde.changeloggenerator.model.CFModFilesResponse;
 import de.blutmondgilde.changeloggenerator.model.CFModLoader;
 import de.blutmondgilde.changeloggenerator.model.CFModLoaderResponse;
@@ -53,7 +56,7 @@ public class CurseForgeAPI {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-            }, 50, TimeUnit.MILLISECONDS).get();
+            }, Main.REQUEST_DELAY, TimeUnit.MILLISECONDS).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
@@ -76,7 +79,7 @@ public class CurseForgeAPI {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-            }, 50, TimeUnit.MILLISECONDS).get();
+            }, Main.REQUEST_DELAY, TimeUnit.MILLISECONDS).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
@@ -94,33 +97,53 @@ public class CurseForgeAPI {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-            }, 50, TimeUnit.MILLISECONDS).get();
+            }, Main.REQUEST_DELAY, TimeUnit.MILLISECONDS).get();
         } catch (ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public List<CFMod> getFilesBetween(CFModLoader modLoader, ModFile oldFile, ModFile newFile) {
+    public CFModFile getFile(ModFile file){
         try {
             return executionService.schedule(() -> {
                 try (CloseableHttpClient client = HttpClients.createDefault()) {
-                    HttpGet request = authorizedGet(String.format("/v1/mods/%s/files?gameVersionTypeId=%s&modLoaderType=%s",
-                        oldFile.getProjectID(),
+                    HttpGet request = authorizedGet(String.format("/v1/mods/%s/files/%s", file.getProjectID(),file.getFileID()));
+                    HttpEntity entity = client.execute(request).getEntity();
+                    String responseString = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+                    CFModFileResponse response = mapper.readValue(responseString, CFModFileResponse.class);
+                    client.close();
+                    return response.getData();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }, Main.REQUEST_DELAY, TimeUnit.MILLISECONDS).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public List<CFModFile> getFilesBetween(CFModLoader modLoader, ModFile oldFile, ModFile newFile) {
+        try {
+            CFModFilesResponse modFilesResponse = executionService.schedule(() -> {
+                try (CloseableHttpClient client = HttpClients.createDefault()) {
+                    HttpGet request = authorizedGet(String.format("/v1/mods/%s/files?gameVersionTypeId=%s&modLoaderType=%s&pageSize=50",
+                        newFile.getProjectID(),
                         modLoader.getMcGameVersionTypeId(),
                         modLoader.getType()));
                     HttpEntity entity = client.execute(request).getEntity();
                     String responseString = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-                    CFModFilesResponse files = mapper.readValue(responseString, CFModFilesResponse.class);
-                    CFMod oldMod = getModInformation(oldFile);
-                    CFMod newMod = getModInformation(newFile);
-                    return Arrays.stream(files.getData())
-                        .filter(cfMod -> cfMod.getCreationDate().isAfter(oldMod.getCreationDate()))
-                        .filter(cfMod -> cfMod.getCreationDate().isBefore(newMod.getCreationDate()))
-                        .collect(Collectors.toList());
+                    return mapper.readValue(responseString, CFModFilesResponse.class);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-            }, 50, TimeUnit.MILLISECONDS).get();
+            }, Main.REQUEST_DELAY, TimeUnit.MILLISECONDS).get();
+
+            CFModFile oldMod = getFile(oldFile);
+            CFModFile newMod = getFile(newFile);
+            return Arrays.stream(modFilesResponse.getData())
+                .filter(cfMod -> cfMod.getCreationDate().isAfter(oldMod.getCreationDate()))
+                .filter(cfMod -> cfMod.getCreationDate().isBefore(newMod.getCreationDate()))
+                .collect(Collectors.toList());
         } catch (ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);
         }

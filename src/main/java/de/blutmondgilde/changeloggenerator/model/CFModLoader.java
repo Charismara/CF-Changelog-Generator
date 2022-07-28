@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CFModLoader {
     private int id, gameVersionId, minecraftGameVersionId, type, modLoaderGameVersionTypeId, mcGameVersionId, mcGameVersionTypeId;
-    private String forgeVersion,name;
+    private String forgeVersion, name;
 }
