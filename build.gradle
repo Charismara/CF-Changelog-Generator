@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'de.blutmondgilde'
-version '1.0-SNAPSHOT'
+version '1.1-SNAPSHOT'
 mainClassName='de.blutmondgilde.changeloggenerator.Main'
 
 repositories {
@@ -19,6 +19,7 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.13.3'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.12.7'
     // https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
     implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
 
@@ -35,6 +36,8 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+compileJava.options.encoding = 'UTF-8'
 
 shadowJar {
 

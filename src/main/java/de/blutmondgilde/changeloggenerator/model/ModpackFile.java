@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ModpackFile {
-    private de.blutmondgilde.changeloggenerator.model.Minecraft minecraft;
+    private Minecraft minecraft;
     private String manifestType, overrides, version, author, name;
     private int manifestVersion;
-    private de.blutmondgilde.changeloggenerator.model.ModFile[] files;
+    private ModFile[] files;
 }

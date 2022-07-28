@@ -1,12 +1,17 @@
 package de.blutmondgilde.changeloggenerator.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import de.blutmondgilde.changeloggenerator.model.CFMod;
 import de.blutmondgilde.changeloggenerator.model.CFModChangelog;
+import de.blutmondgilde.changeloggenerator.model.CFModFilesResponse;
+import de.blutmondgilde.changeloggenerator.model.CFModLoader;
+import de.blutmondgilde.changeloggenerator.model.CFModLoaderResponse;
 import de.blutmondgilde.changeloggenerator.model.CFModResponse;
+import de.blutmondgilde.changeloggenerator.model.Minecraft;
 import de.blutmondgilde.changeloggenerator.model.ModFile;
 import io.github.furstenheim.CopyDown;
-import lombok.RequiredArgsConstructor;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -15,17 +20,25 @@ import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
-@RequiredArgsConstructor
 public class CurseForgeAPI {
     private static final ScheduledExecutorService executionService = Executors.newSingleThreadScheduledExecutor();
     private static final String baseURL = "https://api.curseforge.com";
     private final String token;
     private final ObjectMapper mapper = new ObjectMapper();
+
+    public CurseForgeAPI(String token) {
+        this.token = token;
+        mapper.registerModule(new JodaModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    }
 
     public CFMod getModInformation(ModFile file) {
         try {
@@ -67,6 +80,51 @@ public class CurseForgeAPI {
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public CFModLoader getModLoader(Minecraft minecraft) {
+        try {
+            return executionService.schedule(() -> {
+                try (CloseableHttpClient client = HttpClients.createDefault()) {
+                    HttpGet request = authorizedGet(String.format("/v1/minecraft/modloader/%s", minecraft.getModLoaders()[0].getId()));
+                    HttpEntity entity = client.execute(request).getEntity();
+                    String responseString = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+                    CFModLoaderResponse response = mapper.readValue(responseString, CFModLoaderResponse.class);
+                    return response.getData();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }, 50, TimeUnit.MILLISECONDS).get();
+        } catch (ExecutionException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public List<CFMod> getFilesBetween(CFModLoader modLoader, ModFile oldFile, ModFile newFile) {
+        try {
+            return executionService.schedule(() -> {
+                try (CloseableHttpClient client = HttpClients.createDefault()) {
+                    HttpGet request = authorizedGet(String.format("/v1/mods/%s/files?gameVersionTypeId=%s&modLoaderType=%s",
+                        oldFile.getProjectID(),
+                        modLoader.getMcGameVersionTypeId(),
+                        modLoader.getType()));
+                    HttpEntity entity = client.execute(request).getEntity();
+                    String responseString = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+                    CFModFilesResponse files = mapper.readValue(responseString, CFModFilesResponse.class);
+                    CFMod oldMod = getModInformation(oldFile);
+                    CFMod newMod = getModInformation(newFile);
+                    return Arrays.stream(files.getData())
+                        .filter(cfMod -> cfMod.getCreationDate().isAfter(oldMod.getCreationDate()))
+                        .filter(cfMod -> cfMod.getCreationDate().isBefore(newMod.getCreationDate()))
+                        .collect(Collectors.toList());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }, 50, TimeUnit.MILLISECONDS).get();
+        } catch (ExecutionException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
 
