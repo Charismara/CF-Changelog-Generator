@@ -7,6 +7,9 @@ Simple CurseForge changelog generator
 ```sh
 java -jar CF-Changelog-Generator-1.0.0.jar --token <CF-API-Token> --old <old-zip>.zip --new <new-zip>.zip
 ```
+Optional Arguments:
+- `--requests-per-sec <number>` adjust the amount of API Requests per Second
+- `--md-minimal` Generates a more minimalistic version of the Changelog
 
 ## Getting an CurseForge API Token
 https://support.curseforge.com/en/support/solutions/articles/9000208346-about-the-curseforge-api-and-how-to-apply-for-a-key
