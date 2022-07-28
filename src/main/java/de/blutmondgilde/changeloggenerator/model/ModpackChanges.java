@@ -1,5 +1,6 @@
 package de.blutmondgilde.changeloggenerator.model;
 
+import de.blutmondgilde.changeloggenerator.Main;
 import de.blutmondgilde.changeloggenerator.utils.CurseForgeAPI;
 import de.blutmondgilde.changeloggenerator.utils.Pair;
 
@@ -52,68 +53,114 @@ public class ModpackChanges {
 
     public String getChanges() {
         StringBuilder builder = new StringBuilder();
-        if (!modLoaderUpdateString.isEmpty()) {
-            builder.append(String.format("# %s Update:\n", this.modLoader.getName()))
-                .append(modLoaderUpdateString)
-                .append("\n\n");
-        }
+        switch (Main.GENERATION_MODE) {
+            default:
+            case Markdown: {
+                if (!modLoaderUpdateString.isEmpty()) {
+                    builder.append(String.format("# %s Update:\n", this.modLoader.getName()))
+                        .append(modLoaderUpdateString)
+                        .append("\n\n");
+                }
 
-        builder.append("# __**New Mods**__\n");
-        if (newMods.isEmpty()) {
-            builder.append("## None\n\n");
-        } else {
-            newMods.forEach(modFile -> {
-                CFMod mod = this.api.getModInformation(modFile);
-                builder.append("## ").append(mod.getName())
-                    .append("\n[CurseForge Link](https://www.curseforge.com/minecraft/mc-mods/")
-                    .append(mod.getSlug())
-                    .append(")\n\n");
-            });
-        }
-        System.out.printf("Found %s new Mods%n", newMods.size());
-
-        builder.append("\n_________________\n# __**Changed Mods**__\n");
-        if (changedMods.isEmpty()) {
-            builder.append("## None\n\n");
-        } else {
-            changedMods.forEach(file -> {
-                CFModFile mod = this.api.getFile(file.getRight());
-                CFMod project = this.api.getModInformation(file.getRight());
-                builder.append("## ").append(project.getName())
-                    .append("\n[CurseForge Link](https://www.curseforge.com/minecraft/mc-mods/")
-                    .append(project.getSlug())
-                    .append(")\n\n");
-                builder.append("### ").append(mod.getDisplayName()).append("\n");
-                builder.append(this.api.getModChangeLog(file.getRight())).append("\n");
-                System.out.printf("Checking for skipped files for %s%n", project.getName());
-                List<CFModFile> skippedUpdates = api.getFilesBetween(this.modLoader, file.getLeft(), file.getRight());
-                if (skippedUpdates.size() > 0) {
-                    System.out.printf("Loading %s skipped changelogs for %s%n", skippedUpdates.size(), project.getName());
-                    skippedUpdates.forEach(cfMod -> {
-                        builder.append("\n### ").append(cfMod.getDisplayName()).append("\n");
-                        builder.append(this.api.getModChangeLog(new ModFile(cfMod.getModId(), cfMod.getId(), false))).append("\n");
+                builder.append("# **New Mods**\n");
+                if (newMods.isEmpty()) {
+                    builder.append("## None\n\n");
+                } else {
+                    newMods.forEach(modFile -> {
+                        CFMod mod = this.api.getModInformation(modFile);
+                        builder.append("## ").append(mod.getName())
+                            .append("\n[CurseForge Link](https://www.curseforge.com/minecraft/mc-mods/")
+                            .append(mod.getSlug())
+                            .append(")\n\n");
                     });
                 }
-                builder.append("\n");
-            });
-        }
-        System.out.printf("Found %s changed Mods%n", changedMods.size());
+                System.out.printf("Found %s new Mods%n", newMods.size());
 
-        builder.append("\n_________________\n# __**Removed Mods**__\n\n");
-        if (removedMods.isEmpty()) {
-            builder.append("## None\n\n");
-        } else {
-            removedMods.forEach(modFile -> {
-                CFMod mod = this.api.getModInformation(modFile);
-                builder.append("## ").append(mod.getName())
-                    .append("\n[CurseForge Link](https://www.curseforge.com/minecraft/mc-mods/")
-                    .append(mod.getSlug())
-                    .append(")\n\n");
-            });
-        }
-        System.out.printf("Found %s removed Mods%n", removedMods.size());
+                builder.append("\n_________________\n# **Changed Mods**\n");
+                if (changedMods.isEmpty()) {
+                    builder.append("## None\n\n");
+                } else {
+                    changedMods.forEach(file -> {
+                        CFModFile mod = this.api.getFile(file.getRight());
+                        CFMod project = this.api.getModInformation(file.getRight());
+                        builder.append("## ").append(project.getName())
+                            .append("\n[CurseForge Link](https://www.curseforge.com/minecraft/mc-mods/")
+                            .append(project.getSlug())
+                            .append(")\n\n");
+                        builder.append("### ").append(mod.getDisplayName()).append("\n");
+                        builder.append(this.api.getModChangeLog(file.getRight())).append("\n");
+                        System.out.printf("Checking for skipped files for %s%n", project.getName());
+                        List<CFModFile> skippedUpdates = api.getFilesBetween(this.modLoader, file.getLeft(), file.getRight());
+                        if (skippedUpdates.size() > 0) {
+                            System.out.printf("Loading %s skipped changelogs for %s%n", skippedUpdates.size(), project.getName());
+                            skippedUpdates.forEach(cfMod -> {
+                                builder.append("\n### ").append(cfMod.getDisplayName()).append("\n");
+                                builder.append(this.api.getModChangeLog(new ModFile(cfMod.getModId(), cfMod.getId(), false))).append("\n");
+                            });
+                        }
+                        builder.append("\n");
+                    });
+                }
+                System.out.printf("Found %s changed Mods%n", changedMods.size());
 
-        builder.append("\n_________________\n\n").append("Changelog generated by [CF-Changelog-Generator](https://github.com/Charismara/CF-Changelog-Generator)");
+                builder.append("\n_________________\n# **Removed Mods**\n\n");
+                if (removedMods.isEmpty()) {
+                    builder.append("## None\n\n");
+                } else {
+                    removedMods.forEach(modFile -> {
+                        CFMod mod = this.api.getModInformation(modFile);
+                        builder.append("## ").append(mod.getName())
+                            .append("\n[CurseForge Link](https://www.curseforge.com/minecraft/mc-mods/")
+                            .append(mod.getSlug())
+                            .append(")\n\n");
+                    });
+                }
+                System.out.printf("Found %s removed Mods%n", removedMods.size());
+
+                builder.append("\n_________________\n\n").append("Changelog generated by [CF-Changelog-Generator](https://github.com/Charismara/CF-Changelog-Generator)");
+            }
+            break;
+
+            case MarkdownMinimal: {
+                if (!newMods.isEmpty()) {
+                    builder.append("# **New Mods**\n");
+                    newMods.forEach(modFile -> {
+                        CFMod mod = this.api.getModInformation(modFile);
+                        applyMinimalModData(builder, mod);
+                    });
+                }
+                System.out.printf("Found %s new Mods%n", newMods.size());
+
+                if (!changedMods.isEmpty()) {
+                    builder.append("\n_________________\n# **Changed Mods**\n");
+                    changedMods.forEach(modFile -> {
+                        CFMod mod = this.api.getModInformation(modFile.getRight());
+                        applyMinimalModData(builder, mod);
+                    });
+                }
+                System.out.printf("Found %s changed Mods%n", changedMods.size());
+
+                if (!removedMods.isEmpty()) {
+                    builder.append("\n_________________\n# **Removed Mods**\n\n");
+                    removedMods.forEach(modFile -> {
+                        CFMod mod = this.api.getModInformation(modFile);
+                        applyMinimalModData(builder, mod);
+                    });
+                }
+                System.out.printf("Found %s removed Mods%n", removedMods.size());
+
+                builder.append("\n_________________\n\n").append("Changelog generated by [CF-Changelog-Generator](https://github.com/Charismara/CF-Changelog-Generator)");
+            }
+        }
+
         return builder.toString();
+    }
+
+
+    private void applyMinimalModData(StringBuilder builder, CFMod mod) {
+        builder.append("- ").append(mod.getName())
+            .append(" - [CurseForge Link](https://www.curseforge.com/minecraft/mc-mods/")
+            .append(mod.getSlug())
+            .append(")\n\n");
     }
 }
